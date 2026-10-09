@@ -11,13 +11,67 @@
 
 ;;; Code:
 
-;; Just in case I run my config on an older Emacs somewhere
-(when (< emacs-major-version 30)
-  (error "Emacs version 30 and newer required; this is version %s" emacs-major-version))
+;; Don't put `customize' config in init.el; give it another file.  This makes
+;; it easier to reason about what is written by the user and what is generated
+;; by the running session.
+(setq custom-file (locate-user-emacs-file "custom.el"))
+(when (file-exists-p custom-file)
+  (load custom-file))
 
+;; Set up the package manager and add the MELPA reposiotry to the list of
+;; known package archives.
 (require 'package)
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (package-initialize)
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+
+;; Use use-package to install and configure packages.  Emacs version 29 has
+;; use-package built-in, but earlier versions need to install it.
+(when (< emacs-major-version 29)
+  (unless (package-installed-p 'use-package)
+    (unless package-archive-contents
+      (package-refresh-contents))
+    (package-install 'use-package)))
+
+;; Do not show those confusing warnings when installing packages.  Prevents
+;; Warnings and Compile-Log buffers from popping up, but they can still be
+;; found in the buffer list.
+(add-to-list 'display-buffer-alist
+             '("\\`\\*\\(Warnings\\|Compile-Log\\)\\*\\'"
+               (display-buffer-no-window)
+               (allow-no-window . t)))
+
+;; Delete the selected text upon insertion.  I had a raw
+;; (delete-selection-mode), I wonder why Prot wrote it this way.
+(use-package delsel
+  :ensure nil ; no need to install it as it is built-in
+  :hook (after-init . delete-selection-mode))
+
+;; Make C-g a bit more helpful.
+(defun am/keyboard-quit-dwim ()
+  "Do-What-I-Mean behavior for a general `keyboard-quit'.
+
+The generic `keyboard-quit' does not do the expected thing when the
+minibuffer is open.  Whereas we want to close the minibuffer, even
+without explicitly focusing it.
+
+The DWIM behaviour of this command is as follows:
+
+- When the region is active, disable it.
+- When a minibuffer is open, but not focused, close the minibuffer.
+- When the Completions buffer is selected, close it.
+- In every other case use the regular `keyboard-quit'."
+  (interactive)
+  (cond
+   ((region-active-p)
+    (keyboard-quit))
+   ((derived-mode-p 'completion-list-mode)
+    (delete-completion-window))
+   ((> (minibuffer-depth) 0)
+    (abort-recursive-edit))
+   (t
+    (keyboard-quit))))
+
+(define-key global-map (kbd "C-g") #'am/keyboard-quit-dwim)
 
 ;;; --------------------[ User information ]------------------------------------
 
@@ -62,18 +116,12 @@
 
 (show-paren-mode)             ; Highlight matching parenthesis
 (save-place-mode)             ; Remember the point position for each file
-(delete-selection-mode)       ; Replace selection when typing
 (prefer-coding-system 'utf-8) ; Default to UTF-8 encoding
 (electric-pair-mode nil)      ; When entering a character with a natural pair,
                               ; DON't insert it's corresponding pair
 
 ;; Don't use compiled code if its older than uncompiled code
 (setq-default load-prefer-newer t)
-
-;; Don't put 'customize' config in init.el; give it another file
-(setq custom-file (locate-user-emacs-file "custom.el"))
-(when (file-exists-p custom-file)
-  (load custom-file))
 
 ;; Don't litter backup files everywhere. Contain them to a directory in .config
 (defun am/backup-file-name (fpath)
