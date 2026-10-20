@@ -9,44 +9,41 @@
 ;; I keep removing configuration from my init.el as Emacs gets more and more
 ;; sane defaults.
 
-;;; Code:
-
-;; Don't put `customize' config in init.el; give it another file.  This makes
-;; it easier to reason about what is written by the user and what is generated
-;; by the running session.
+
+;;; Put all auto-generated configurations in a separate file
 (setq custom-file (locate-user-emacs-file "custom.el"))
 (when (file-exists-p custom-file)
   (load custom-file))
 
-;; Set up the package manager and add the MELPA reposiotry to the list of
-;; known package archives.
+
+;;; Set up the package manager
 (require 'package)
 (package-initialize)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 
-;; Use use-package to install and configure packages.  Emacs version 29 has
-;; use-package built-in, but earlier versions need to install it.
+
+;;; Set up use-package
 (when (< emacs-major-version 29)
   (unless (package-installed-p 'use-package)
     (unless package-archive-contents
       (package-refresh-contents))
     (package-install 'use-package)))
 
-;; Do not show those confusing warnings when installing packages.  Prevents
-;; Warnings and Compile-Log buffers from popping up, but they can still be
-;; found in the buffer list.
+
+;;; Do not show those confusing warnings when installing packages
 (add-to-list 'display-buffer-alist
              '("\\`\\*\\(Warnings\\|Compile-Log\\)\\*\\'"
                (display-buffer-no-window)
                (allow-no-window . t)))
 
-;; Delete the selected text upon insertion.  I had a raw
-;; (delete-selection-mode), I wonder why Prot wrote it this way.
+
+;;; Delete the selected text upon text insertion
 (use-package delsel
-  :ensure nil ; no need to install it as it is built-in
+  :ensure nil                        ; no need to install it as it is built-in
   :hook (after-init . delete-selection-mode))
 
-;; Make C-g a bit more helpful.
+
+;;; Make C-g a bit more helpful.
 (defun am/keyboard-quit-dwim ()
   "Do-What-I-Mean behavior for a general `keyboard-quit'.
 
@@ -73,27 +70,27 @@ The DWIM behaviour of this command is as follows:
 
 (define-key global-map (kbd "C-g") #'am/keyboard-quit-dwim)
 
-;; Only the default face needs an absolute size, the others can be realtive.
+
+;;; Use the preferred fonts
 (let ((mono-spaced-font "Iosevka")
       (proportionately-spaced-font "Sans"))
   (set-face-attribute 'default nil :family mono-spaced-font :height 120)
   (set-face-attribute 'fixed-pitch nil :family mono-spaced-font :height 1.0)
   (set-face-attribute 'variable-pitch nil :family proportionately-spaced-font :height 1.0))
 
-;; Theme
+
+;;; Choose a theme and tweak the looks of Emacs
 (use-package modus-themes
   :ensure t
   :init
-  ;; (setq modus-themes-disable-other-themes t
-  ;;       modus-themes-mode-line '(borderless accented)
-  ;;       modus-themes-org-blocks 'gray-background
   (setq modus-themes-to-toggle '(modus-operandi modus-vivendi))
-  ;;       modus-themes-italic-constructs t
-  ;;       modus-themes-bold-constructs t)
+  (setq modus-themes-bold-constructs t)
+  (setq modus-themes-italic-constructs t)
   (load-theme 'modus-operandi :no-confirm-loading)
   :bind ("<f5>" . modus-themes-toggle))
 
-;; Icon fonts
+
+;;; Use icon fonts in various places
 (use-package nerd-icons
   :ensure t)
 
@@ -114,8 +111,8 @@ The DWIM behaviour of this command is as follows:
   :hook
   (dired-mod . nerd-icons-dired-mode))
 
-;; Mini-buffer and related
-
+
+;;; Mini-buffer and related
 (use-package vertico
   :ensure t
   :hook (after-init . vertico-mode))
@@ -151,6 +148,41 @@ The DWIM behaviour of this command is as follows:
   (with-eval-after-load 'savehist
     (corfu-history-mode 1)
     (add-to-list 'savehist-additional-variables 'corfu-history)))
+
+
+;;; Tweak the dired Emacs file manager
+(use-package dired
+  :ensure nil
+  :commands (dired)
+  :hook
+  ((dired-mode . dired-hide-details-mode)
+   (dired-mode . hl-line-mode))
+  :config
+  (setq dired-recursive-copies 'always)
+  (setq dired-recursive-deletes 'always)
+  (setq delete-by-moving-to-trash t)
+  (setq dired-dwim-target t))
+
+(use-package dired-subtree
+  :ensure t
+  :after dired
+  :bind
+  ( :map dired-mode-map
+    ("<tab>" . dired-subtree-toggle)
+    ("TAB" . dired-subtree-toggle)
+    ("<backtab>" . dired-subtree-remove)
+    ("S-TAB" . dired-subtree-remove))
+  :config
+  (setq dired-subtree-use-backgrounds nil))
+
+(use-package trashed
+  :ensure t
+  :commands (trashed)
+  :config
+  (setq trashed-action-confirmer 'y-or-n-p)
+  (setq trashed-use-header-line t)
+  (setq trashed-sort-key '("Date deleted" . t))
+  (setq trashed-date-format "%Y-%m-%d %H:%M:%S"))
 
 ;;; --------------------[ User information ]------------------------------------
 
@@ -459,13 +491,6 @@ The DWIM behaviour of this command is as follows:
   (setq denote-journal-keyword "journal")
   ;; Read the doc string of `denote-journal-title-format'.
   (setq denote-journal-title-format 'day-date-month-year))
-
-;;; --------------------[ Dired ]-----------------------------------------------
-
-(use-package dired
-  :init
-  (setq dired-dwim-target t)
-  :hook (dired-mode . dired-hide-details-mode))
 
 ;;; --------------------[ Magit ]-----------------------------------------------
 
