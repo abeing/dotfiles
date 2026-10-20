@@ -9,6 +9,8 @@
 (setq native-comp-async-report-warnings-errors 'silent)
 
 (setq frame-resize-pixelwise t)
+(menu-bar-mode -1)
+(scroll-bar-mode -1)
 (tool-bar-mode -1)
 (setq default-frame-alist '((fullscreen . maximized)
                             (background-color . "#FFFFFF")

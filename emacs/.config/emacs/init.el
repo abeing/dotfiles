@@ -73,6 +73,85 @@ The DWIM behaviour of this command is as follows:
 
 (define-key global-map (kbd "C-g") #'am/keyboard-quit-dwim)
 
+;; Only the default face needs an absolute size, the others can be realtive.
+(let ((mono-spaced-font "Iosevka")
+      (proportionately-spaced-font "Sans"))
+  (set-face-attribute 'default nil :family mono-spaced-font :height 120)
+  (set-face-attribute 'fixed-pitch nil :family mono-spaced-font :height 1.0)
+  (set-face-attribute 'variable-pitch nil :family proportionately-spaced-font :height 1.0))
+
+;; Theme
+(use-package modus-themes
+  :ensure t
+  :init
+  ;; (setq modus-themes-disable-other-themes t
+  ;;       modus-themes-mode-line '(borderless accented)
+  ;;       modus-themes-org-blocks 'gray-background
+  (setq modus-themes-to-toggle '(modus-operandi modus-vivendi))
+  ;;       modus-themes-italic-constructs t
+  ;;       modus-themes-bold-constructs t)
+  (load-theme 'modus-operandi :no-confirm-loading)
+  :bind ("<f5>" . modus-themes-toggle))
+
+;; Icon fonts
+(use-package nerd-icons
+  :ensure t)
+
+(use-package nerd-icons-completion
+  :ensure t
+  :after marginalia
+  :config
+  (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
+
+(use-package nerd-icons-corfu
+  :ensure t
+  :after corfu
+  :config
+  (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))
+
+(use-package nerd-icons dired
+  :ensure t
+  :hook
+  (dired-mod . nerd-icons-dired-mode))
+
+;; Mini-buffer and related
+
+(use-package vertico
+  :ensure t
+  :hook (after-init . vertico-mode))
+
+(use-package marginalia
+  :ensure t
+  :hook (after-init . marginalia-mode))
+
+(use-package orderless
+  :ensure t
+  :config
+  (setq completion-styles '(orderless basic))
+  (setq completion-category-defaults nil)
+  (setq completion-category-overrides nil))
+
+(use-package savehist
+  :ensure nil ; it is built-in
+  :hook (after-init . savehist-mode))
+
+(use-package corfu
+  :ensure t
+  :hook (after-init . global-corfu-mode)
+  :bind (:map corfu-map ("<tab>" . corfu-complete))
+  :config
+  (setq tab-always-indent 'complete)
+  (setq corfu-preview-current nil)
+  (setq corfu-min-width 20)
+
+  (setq corfu-popupinfo-delay '(1.25 . 0.5))
+  (corfu-popupinfo-mode 1) ; shows documentation after `corfu-popupinfo-delay'
+
+  ;; Sort by input history (no need to modify `corfu-sort-function').
+  (with-eval-after-load 'savehist
+    (corfu-history-mode 1)
+    (add-to-list 'savehist-additional-variables 'corfu-history)))
+
 ;;; --------------------[ User information ]------------------------------------
 
 (setq user-full-name "Adam Miezianko"
@@ -107,9 +186,6 @@ The DWIM behaviour of this command is as follows:
  column-number-mode t        ; Display column number in the mode line
  vc-follow-symlinks t        ; Follow symlinks without asking
  ring-bell-function nil)     ; Don't ding
-
-;; Save history of the minibuffer
-(savehist-mode t)
 
 ;; Use Ctrl-<arrow keys> to move through windows
 (windmove-default-keybindings 'control)
@@ -159,15 +235,7 @@ The DWIM behaviour of this command is as follows:
 (setopt auto-revert-check-vc-info t)
 (global-auto-revert-mode t)
 
-;; Don't show the menu bar, except on macOS. On macOS the menu bar doesn't take
-;; up any additional screen real estate, so there's no harm in keeping it.
-(when (not my-laptop-p)
-  (menu-bar-mode -1))
-
 (setq visible-bell t)
-
-(set-face-attribute 'default nil :family "Iosevka" :height 120)
-;; (set-face-attribute 'default nil :family "Go Mono" :height 100)
 
 (setq shr-width 80)
 
@@ -185,22 +253,6 @@ The DWIM behaviour of this command is as follows:
 (global-set-key (kbd "M-i") 'imenu)
 (global-set-key (kbd "C-c s i") 'imenu)
 
-;;; --------------------[ Themes ]----------------------------------------------
-
-(use-package modus-themes
-  :ensure t
-  :init
-  (setq modus-themes-disable-other-themes t
-        modus-themes-mode-line '(borderless accented)
-        modus-themes-org-blocks 'gray-background
-        modus-themes-to-toggle '(modus-operandi modus-vivendi)
-        modus-themes-italic-constructs t
-        modus-themes-bold-constructs t)
-  (load-theme 'modus-operandi)
-  :bind ("<f5>" . modus-themes-toggle))
-
-(use-package ef-themes
-  :ensure t)
 
 ;;; --------------------[ Diminish ]--------------------------------------------
 
@@ -234,67 +286,6 @@ The DWIM behaviour of this command is as follows:
 
 ;; TAB acts more like how it does in the shell
 (keymap-set minibuffer-mode-map "TAB" 'minibuffer-complete)
-
-(use-package vertico
-  :ensure t
-  :init
-  (fido-mode 0)
-  (vertico-mode))
-
-(use-package vertico-directory
-  :ensure nil
-  :after vertico
-  :bind (:map vertico-map
-              ("M-DEL" . vertico-directory-delete-word)))
-
-(use-package marginalia
-  :ensure t
-  :config
-  (marginalia-mode))
-
-(use-package corfu
-  :ensure t
-  :init
-  (global-corfu-mode)
-  :bind
-  (:map corfu-map
-        ("SPC" . corfu-insert-separator)
-        ("C-n" . corfu-next)
-        ("C-p" . corfu-previous)))
-
-(use-package corfu-popupinfo
-  :ensure nil
-  :after corfu
-  :hook (corfu-mode . corfu-popupinfo-mode)
-  :custom
-  (corfu-popupinfo-delay '(0.25 . 0.1))
-  (corfu-popupinfo-hide nil)
-  :config
-  (corfu-popupinfo-mode))
-
-(use-package corfu-terminal
-  :if (not (display-graphic-p))
-  :ensure t
-  :config
-  (corfu-terminal-mode))
-
-(use-package cape
-  :ensure t
-  :init
-  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  (add-to-list 'completion-at-point-functions #'cape-file))
-
-(use-package kind-icon
-  :if (display-graphic-p)
-  :ensure t
-  :after corfu
-  :config
-  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
-
-(use-package orderless
-  :ensure t
-  :custom
-  (completion-styles '(orderless)))
 
 ;;; --------------------[ Navigation and actions ]------------------------------
 
