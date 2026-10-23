@@ -124,9 +124,7 @@ The DWIM behaviour of this command is as follows:
 (use-package orderless
   :ensure t
   :config
-  (setq completion-styles '(orderless basic))
-  (setq completion-category-defaults nil)
-  (setq completion-category-overrides nil))
+  (setq completion-styles '(orderless)))
 
 (use-package savehist
   :ensure nil ; it is built-in
@@ -307,14 +305,6 @@ The DWIM behaviour of this command is as follows:
 (setopt completions-detailed t)         ; Show annotations
 (setopt tab-always-indent 'complete)    ; TAB tries to complete, otherwise
                                         ; indents
-;; Different styles to match input candidates
-(setopt completion-styles '(basic initials substring))
-(setopt completion-auto-help 'always)   ; Open completion always; `lazy'
-                                        ; another option
-(setopt completions-max-height 20)
-(setopt completions-format 'one-column)
-(setopt completions-group t)
-(setopt completion-auto-select 'second-tab)
 
 ;; TAB acts more like how it does in the shell
 (keymap-set minibuffer-mode-map "TAB" 'minibuffer-complete)
